@@ -30,9 +30,8 @@ jobs:
               
     deploy:
         runs-on: ubuntu-latest
-        needs:
-            - build
-        if: ${{ !github.event.inputs.dry-run || github.event.inputs.target.environment }}    
+        if: ${{ !github.event.inputs.dry-run }}
+        environment: ${{ github.event.inputs.target }}
         steps:
             - name: Deploy
-              run: echo "Deploying to ${{ github.event.inputs.target.environment }}"
+              run: echo "Deploying to ${{ github.event.inputs.target }}"
