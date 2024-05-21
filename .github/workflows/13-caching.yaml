@@ -16,8 +16,42 @@ on:
                 default: 20.x
                 description: Node version.        
 jobs:
+    install-deps:
+      runs-on: ubuntu-latest
+      defaults:
+        run:
+          working-directory: 13-caching/react-app
+      outputs: 
+        deps-cache-key: ${{ steps.cache-key.outputs.CACHE_KEY }}    
+      steps:
+        - name: Checkout Code
+          uses: actions/checkout@v4
+          
+        - name: Setup Node
+          uses: actions/setup-node@v3
+          with:
+            node-version: ${{ inputs.node-version}}
+            
+        - name: Calculate cache key
+          id: cache-key
+          run: |
+            echo "CACHE_KEY=deps-node-modules-${{ hashFiles('13-caching/react-app/package-lock.json') }}" >> $GITHUB_OUTPUT
+              
+        - name: Download cached dependencies
+          id: cache
+          if: ${{ inputs.use-cache }}
+          uses: actions/cache@v3
+          with:
+            path: 13-caching/react-app/node_modules
+            key: ${{ steps.cache-key.outputs.CACHE_KEY }}  
+            
+        - name: Install Dependencies
+          if: steps.cache.outputs.cache-hit != 'true'
+          run: npm ci    
+
     build:
         runs-on: ubuntu-latest
+        needs: install-deps
         defaults:
             run:
                 working-directory: 13-caching/react-app
@@ -33,10 +67,10 @@ jobs:
             - name: Download cached dependencies
               id: cache
               if: ${{ inputs.use-cache }}
-              uses: actions/cache@v4
+              uses: actions/cache@v3
               with:
                 path: 13-caching/react-app/node_modules
-                key: deps-node-modules-${{ hashFiles('13-caching/react-app/package-lock.json') }}    
+                key: ${{ needs.install-deps.outputs.deps-cache-key }}     
 
             - name: Install Dependencies
               if: steps.cache.outputs.cache-hit != 'true'
@@ -50,5 +84,5 @@ jobs:
               
             - name: Deploying to nonprod
               run: echo "Deploying to nonprod"
-              
+            
 
