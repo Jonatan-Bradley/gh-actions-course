@@ -12,7 +12,7 @@ run-name: 16 - Working with Environments | env - ${{ inputs.target-env }}
 
 
 jobs: 
-    echo:
+    deploy-staging:
         runs-on: ubuntu-latest
         environment: ${{ inputs.target-env }}  
         env:
@@ -20,4 +20,35 @@ jobs:
         steps:
             - name: Echo vars
               run: |
-                echo "Env variable: ${{ env.my-env-value }}"             
+                echo "Deploying to staging" 
+    e2e-tests:
+        runs-on: ubunut-latets
+        needs: deploy-staging
+        steps:
+            - name: E2E tests
+              run: echo "Running E2E"
+              
+    deploy-prod-frontend:
+        runs-on: ubunut-latest
+        needs: e2e-tests
+        environment: prod
+        env:
+            my-env-value: ${{ vars.MY_ENV_VALUE || 'default value' }}  
+        steps:
+            - name: Echo vars
+              run: |
+                echo "Deploy to frontend"
+
+    deploy-prod-backend:
+        runs-on: ubunut-latest
+        needs: e2e-tests
+        environment: prod
+        env:
+            my-env-value: ${{ vars.MY_ENV_VALUE || 'default value' }}  
+        steps:
+            - name: Echo vars
+              run: |
+                  echo "Deploy to backend"                
+
+
+
